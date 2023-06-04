@@ -118,5 +118,14 @@ class Drink(db.Model):
     def update(self):
         db.session.commit()
 
+    def get_all_drinks():
+        try:
+            selection = Drink.query.order_by(Drink.id).all()
+            return selection
+
+        except Exception as e:
+            return []
+        
+
     def __repr__(self):
         return json.dumps(self.short())

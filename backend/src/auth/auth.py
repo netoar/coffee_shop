@@ -1,9 +1,10 @@
 import json
 from flask import request, _request_ctx_stack
 from functools import wraps
-from jose import jwt
 from urllib.request import urlopen
-
+from cryptography.hazmat.primitives import serialization
+from cryptography.x509 import load_pem_x509_certificate
+from cryptography.hazmat.backends import default_backend
 
 AUTH0_DOMAIN = "dev-uwcxc2qfxd26wgq8.us.auth0.com"
 ALGORITHMS = ["RS256"]
@@ -71,7 +72,7 @@ def get_token_auth_header():
         )
 
     token = header_parts[1]
-    # print("TOKEN: " + token)
+    print("TOKEN:" + token)
     return token
 
 
@@ -136,13 +137,12 @@ def verify_decode_jwt(token):
 
     for key in jwks["keys"]:
         if key["kid"] == unverified_header["kid"]:
-            rsa_key = {
-                "kty": key["kty"],
-                "kid": key["kid"],
-                "use": key["use"],
-                "n": key["n"],
-                "e": key["e"],
-            }
+            certificate = load_pem_x509_certificate(
+                key["x5c"][0].encode("utf-8"), default_backend()
+            )
+            public_key = certificate.public_key()
+            rsa_key = public_key
+
     if rsa_key:
         try:
             payload = jwt.decode(

@@ -1,14 +1,14 @@
 .PHONY: all
 
-env/bin/activate: requirements.txt
-	/usr/local/bin/python3.8 -m venv env
-	./env/bin/pip install -r requirements.txt
+venv/bin/activate: requirements.txt
+	/usr/local/bin/python3.9 -m venv venv
+	./venv/bin/pip install -r requirements.txt
 
-run: env/bin/activate
-	FLASK_APP=src/api.py ./env/bin/flask run --reload
+run: venv/bin/activate
+	FLASK_APP=src/api.py ./venv/bin/flask run --reload
 
-freeze: env/bin/pip
-	./env/bin/pip freeze > requirements.txt
+freeze: venv/bin/pip
+	./venv/bin/pip freeze > requirements.txt
 
 clean:
 	rm -rf __pycache__
