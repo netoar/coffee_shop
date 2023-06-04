@@ -13,6 +13,9 @@ app = Flask(__name__)
 setup_db(app)
 CORS(app)
 
+with app.app_context():
+    db_drop_and_create_all()
+
 """
 @TODO uncomment the following line to initialize the database
 !! NOTE THIS WILL DROP ALL RECORDS AND START YOUR DB FROM SCRATCH
@@ -33,11 +36,12 @@ CORS(app)
 
 @app.route("/drinks", methods=["GET"])
 def get_drinks():
-    # all_drinks = get_all_drinks()
-    all_drinks = Drink.get_all_drinks()
-    # if not all_drinks['success']:
-    #     abort(404)
-    return all_drinks
+    drink = Drink()
+    all_drinks = drink.get_all_drinks()
+    if all_drinks == []:
+        abort(404)
+    return jsonify({"success": True, "drinks": [drink.long() for drink in all_drinks]},
+    200)
 
 
 """
@@ -217,16 +221,11 @@ def auth_error(error):
     ) """
 
 
-@app.errorhandler(400)
+@app.errorhandler(404)
 def not_found(error):
     return (
-        jsonify({"success": False, "error": 400,
-                 "message": "Unprocessable"}),
-        400,
+        jsonify({"success": False, "error": 404,
+                 "message": "Not found"}),
+        404,
     )
 
-
-if __name__ == '__main__':
-    db_drop_and_create_all()
-    port = int(os.environ.get('PORT', 3000))
-    app.run(host='0.0.0.0', port=port)

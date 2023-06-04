@@ -118,7 +118,7 @@ class Drink(db.Model):
     def update(self):
         db.session.commit()
 
-    def get_all_drinks():
+    def get_all_drinks(self):
         try:
             selection = Drink.query.order_by(Drink.id).all()
             return selection
