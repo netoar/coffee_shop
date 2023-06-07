@@ -2,13 +2,14 @@ import json
 from flask import request, _request_ctx_stack
 from functools import wraps
 from urllib.request import urlopen
+from jose import jwt
 from cryptography.hazmat.primitives import serialization
 from cryptography.x509 import load_pem_x509_certificate
 from cryptography.hazmat.backends import default_backend
 
 AUTH0_DOMAIN = "dev-uwcxc2qfxd26wgq8.us.auth0.com"
 ALGORITHMS = ["RS256"]
-API_AUDIENCE = "dev"
+API_AUDIENCE = "coffee-shop"
 
 ## AuthError Exception
 """
@@ -36,7 +37,7 @@ class AuthError(Exception):
 
 
 def get_token_auth_header():
-    auth_header = request.headers.get("Authorization")
+    auth_header = request.headers.environ['HTTP_AUTHORIZATION']
     if not auth_header:
         raise AuthError(
             {
@@ -119,72 +120,60 @@ def check_permissions(permission, payload):
     !!NOTE urlopen has a common certificate error described here: https://stackoverflow.com/questions/50236117/scraping-ssl-certificate-verify-failed-error-for-http-en-wikipedia-org
 """
 
-
 def verify_decode_jwt(token):
-    url = urlopen(f"https://{AUTH0_DOMAIN}/.well-known/jwks.json")
-    jwks = json.loads(url.read())
-    unverified_header = jwt.get_unverified_header(token)
-    rsa_key = {}
+        jsonurl = urlopen(f'https://{AUTH0_DOMAIN}/.well-known/jwks.json')
+        jwks = json.loads(jsonurl.read())
+        unverified_header = jwt.get_unverified_header(token)
+        rsa_key = {}
+        if 'kid' not in unverified_header:
+            raise AuthError({
+                'code': 'invalid_header',
+                'description': 'Authorization malformed.'
+            }, 401)
 
-    if "kid" not in unverified_header:
-        raise AuthError(
-            {
-                "code": "invalid_header",
-                "description": "Authorization header is not right.",
-            },
-            401,
-        )
+        for key in jwks['keys']:
+            if key['kid'] == unverified_header['kid']:
+                rsa_key = {
+                    'kty': key['kty'],
+                    'kid': key['kid'],
+                    'use': key['use'],
+                    'n': key['n'],
+                    'e': key['e']
+                }
+            if rsa_key:
+                try:
+                    payload = jwt.decode(
+                        token,
+                        rsa_key,
+                        algorithms=ALGORITHMS,
+                        audience=API_AUDIENCE,
+                        issuer='https://' + AUTH0_DOMAIN + '/'
+                    )
 
-    for key in jwks["keys"]:
-        if key["kid"] == unverified_header["kid"]:
-            certificate = load_pem_x509_certificate(
-                key["x5c"][0].encode("utf-8"), default_backend()
-            )
-            public_key = certificate.public_key()
-            rsa_key = public_key
+                    return payload
 
-    if rsa_key:
-        try:
-            payload = jwt.decode(
-                token,
-                rsa_key,
-                algorithms=ALGORITHMS,
-                audience=API_AUDIENCE,
-                issuer="https://" + AUTH0_DOMAIN + "/",
-            )
-            return payload
+                except jwt.ExpiredSignatureError:
+                    raise AuthError({
+                        'code': 'token_expired',
+                        'description': 'Token expired.'
+                    }, 401)
 
-        except jwt.ExpiredSignatureError:
-            raise AuthError(
-                {"code": "expired_token", "description": "Token is expired."}, 401
-            )
+                except jwt.JWTClaimsError:
+                    raise AuthError({
+                        'code': 'invalid_claims',
+                        'description': 'Incorrect claims. Please, check the audience and issuer.'
+                    }, 401)
 
-        except jwt.JWTClaimsError:
-            raise AuthError(
-                {
-                    "code": "invalid_claims",
-                    "description": "Incorrect claims. Check the audience and issuer",
-                },
-                401,
-            )
+                except Exception:
+                    raise AuthError({
+                        'code': 'invalid_header',
+                        'description': 'Unable to parse authentication token.'
+                    }, 400)
 
-        except Exception:
-            raise AuthError(
-                {
-                    "code": "invalid_header",
-                    "description": "Unable to parse authentication token.",
-                },
-                401,
-            )
-
-    raise AuthError(
-        {
-            "code": "invalid_header",
-            "description": "Cannot find the correct authentication key.",
-        },
-        401,
-    )
-
+            raise AuthError({
+                'code': 'invalid_header',
+                'description': 'Unable to find the appropriate key.'
+            }, 400)
 
 """
 @TODO implement @requires_auth(permission) decorator method
@@ -198,7 +187,7 @@ def verify_decode_jwt(token):
 """
 
 
-def requires_auth(permission=""):
+def requires_auth(permission=[]):
     def requires_auth_decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):

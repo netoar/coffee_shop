@@ -122,7 +122,24 @@ class Drink(db.Model):
         try:
             selection = Drink.query.order_by(Drink.id).all()
             return selection
+        except Exception as e:
+            return []
 
+    def get_drink_detail(self):
+        try:
+            drinks_detail_raw = Drink.query.order_by(Drink.id).all()
+            return drinks_detail_raw
+        except Exception as e:
+            return []
+
+    def create_new_drink(title, recipe_raw):
+        try:
+            drink = Drink(
+                title=title, recipe=json.dumps(recipe_raw)
+            )
+            drink.insert()
+
+            return drink
         except Exception as e:
             return []
         
