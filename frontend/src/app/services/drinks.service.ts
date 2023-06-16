@@ -82,13 +82,22 @@ export class DrinksService {
 
   constructor(private auth: AuthService, private http: HttpClient) { }
 
-  getHeaders() {
+  /* getHeaders() {
     const header = {
       headers: new HttpHeaders()
         .set('Authorization', `Bearer ${this.auth.activeJWT()}`)
     };
     return header;
+  } */
+
+  getHeaders() {
+    const headers = new HttpHeaders()
+      .set('Authorization', `Bearer ${this.auth.activeJWT()}`)
+      .set('Content-Type', 'application/json');
+
+    return { headers };
   }
+
 
   getDrinks() {
     if (this.auth.can('get:drinks-detail')) {
@@ -129,7 +138,13 @@ export class DrinksService {
   deleteDrink(drink: Drink) {
     delete this.items[drink.id];
     this.http.delete(this.url + '/drinks/' + drink.id, this.getHeaders())
-      .subscribe((res: any) => {
+      .subscribe(([data, statusCode]: any) => {
+        if (statusCode === 200) {
+          alert(`La bebida con id ${data.delete} se ha borrado`)
+        } else {
+          alert('Ha ocurrido un error!')
+        }
+
 
       });
   }

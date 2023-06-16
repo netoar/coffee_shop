@@ -142,7 +142,33 @@ class Drink(db.Model):
             return drink
         except Exception as e:
             return []
+
+    def delete_drink(drink_id):
+        try:
+            drink = get_drink_by_id(drink_id)
+            drink.delete()
+            return drink_id
+        except Exception as e:
+            return []
+
+    def edit_drink(title, recipe, id):
+        try:
+            drink = get_drink_by_id(2)
+            drink.title = title
+            drink.recipe=json.dumps(recipe)
+            drink.update()
+            return drink
+        except Exception as e:
+            return []
+
         
 
     def __repr__(self):
         return json.dumps(self.short())
+
+def get_drink_by_id(drink_id):
+    try:
+        drink = Drink.query.filter_by(id=drink_id).first()
+        return drink
+    except Exception as e:
+        return None

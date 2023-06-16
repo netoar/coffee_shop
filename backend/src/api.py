@@ -4,7 +4,7 @@ import traceback
 from flask import Flask, jsonify, request, abort
 from flask_cors import CORS
 
-from database.models import setup_db, db_drop_and_create_all, Drink
+from database.models import setup_db, db_drop_and_create_all, Drink, get_drink_by_id
 
 from auth.auth import requires_auth
 
@@ -104,6 +104,23 @@ def create_drinks(jwt):
         or appropriate status code indicating reason for failure
 """
 
+@app.route("/drinks/<id>", methods=["PATCH"])
+@requires_auth("patch:drinks")
+def edit_drink(jwt, id):
+    body = request.get_json()
+    title = body.get("title")
+    recipe = body.get("recipe")
+    drink = Drink.edit_drink(title, recipe, id)
+    if not drink:
+        abort(500)
+
+    drink_detail = get_drink_by_id(id)
+    if not drink_detail == drink:
+        abort(404)
+    return (
+        jsonify({"success": True, "delete": drink['id']}, 200))
+
+
 """
 @TODO implement endpoint
     DELETE /drinks/<id>
@@ -115,6 +132,16 @@ def create_drinks(jwt):
         or appropriate status code indicating reason for failure
 """
 
+@app.route("/drinks/<id>", methods=["DELETE"])
+@requires_auth("delete:drinks")
+def delete_drink(jwt, id):
+
+    error = Drink.delete_drink(id)
+    if not error:
+        abort(500)
+    return (
+        jsonify({"success": True, "delete": id}, 200))
+
 
 @app.errorhandler(404)
 def not_found(error):
@@ -122,5 +149,13 @@ def not_found(error):
         jsonify({"success": False, "error": 404,
                  "message": "Not found"}),
         404,
+    )
+
+@app.errorhandler(500)
+def not_found(error):
+    return (
+        jsonify({"success": False, "error": 500,
+                 "message": "Not found"}),
+        500,
     )
 
