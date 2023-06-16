@@ -127,8 +127,9 @@ class Drink(db.Model):
 
     def get_drink_detail(self):
         try:
-            drinks_detail_raw = Drink.query.order_by(Drink.id).all()
-            return drinks_detail_raw
+            id=Drink['id']
+            drink_detail_raw = Drink.query.filter_by(id=id).first()
+            return drink_detail_raw
         except Exception as e:
             return []
 

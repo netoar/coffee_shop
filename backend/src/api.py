@@ -40,7 +40,7 @@ def get_drinks():
     all_drinks = drink.get_all_drinks()
     if all_drinks == []:
         abort(404)
-    return jsonify({"success": True, "drinks": [drink.long() for drink in all_drinks]},
+    return jsonify({"success": True, "drinks": [drink.short() for drink in all_drinks]},
     200)
 
 
@@ -58,7 +58,7 @@ def get_drinks():
 @requires_auth("get:drinks-detail")
 def get_drinks_detail(jwt):
     drink = Drink()
-    drinks_detail = drink.get_drink_detail()
+    drinks_detail = drink.get_all_drinks()
     if drinks_detail == []:
         abort(404)
     return (
@@ -83,11 +83,11 @@ def create_drinks(jwt):
     title = body.get("title")
     recipe = body.get("recipe")
     drink = Drink.create_new_drink(title, recipe)
-    all_drinks = drink.get_all_drinks()
+    new_drink = drink.get_drink_detail()
     if drink == []:
         abort(404)
     return (
-            jsonify({"success": True, "drinks": [drink.long() for drink in all_drinks]}),
+            jsonify({"success": True, "drinks": [new_drink.long()]}),
             200
         )
 
