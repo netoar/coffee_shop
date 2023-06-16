@@ -83,11 +83,10 @@ def create_drinks(jwt):
     title = body.get("title")
     recipe = body.get("recipe")
     drink = Drink.create_new_drink(title, recipe)
-    new_drink = drink.get_drink_detail()
     if drink == []:
         abort(404)
     return (
-            jsonify({"success": True, "drinks": [new_drink.long()]}),
+            jsonify({"success": True, "drinks": [drink.long()]}),
             200
         )
 
